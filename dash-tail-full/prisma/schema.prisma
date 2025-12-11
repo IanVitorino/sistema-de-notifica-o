@@ -105,6 +105,7 @@ model User {
   Account         Account[]
   Session         Session[]
   SystemLog       SystemLog[]
+  Lembretes       Lembrete[]
   UserRole        UserRole    @relation(fields: [roleId], references: [id])
 
   @@index([invitedByUserId])
@@ -839,4 +840,101 @@ enum UserStatus {
   INACTIVE
   ACTIVE
   BLOCKED
+}
+
+// ============================================
+// SISTEMA DE LEMBRETES
+// ============================================
+
+// Status do lembrete
+enum StatusLembrete {
+  CONFIRMADO              // Aguardando próximo disparo
+  DISPARADO              // Pop-up ativo/visível
+  AGUARDANDO_CONFIRMACAO // Aguardando confirmação na plataforma
+}
+
+// Prioridade do lembrete
+enum PrioridadeLembrete {
+  BAIXA
+  MEDIA
+  ALTA
+  URGENTE
+}
+
+// Model principal de Lembretes
+model Lembrete {
+  id                    String            @id @default(cuid())
+
+  // Informações básicas
+  titulo                String            @db.VarChar(255)
+  descricao             String?           @db.Text
+  prioridade            PrioridadeLembrete @default(MEDIA)
+  ativo                 Boolean           @default(true)
+
+  // Relacionamento com usuário
+  userId                String
+  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Estado atual
+  status                StatusLembrete    @default(CONFIRMADO)
+
+  // Configurações de tempo (em minutos)
+  intervaloInicial      Int               // Tempo até primeiro disparo
+  intervaloRecorrencia  Int               // Tempo entre ciclos após confirmação
+  intervaloRedisparo    Int               // Tempo entre re-exibições do pop-up (estado DISPARADO)
+  intervaloLembreteConfirmacao Int        // Tempo entre lembretes de confirmação (estado AGUARDANDO)
+
+  // Timestamps de controle
+  dataCriacao           DateTime          @default(now())
+  dataUltimaConfirmacao DateTime          @default(now())
+  dataDisparo           DateTime?         // Quando entrou em DISPARADO
+  dataVisto             DateTime?         // Quando usuário clicou "VISTO"
+  proximoDisparo        DateTime          // Calculado: dataUltimaConfirmacao + intervaloRecorrencia
+
+  // Controle de exibições (Estado DISPARADO)
+  numeroExibicoes       Int               @default(0)  // Quantas vezes pop-up foi exibido
+  ultimaExibicao        DateTime?         // Última vez que pop-up foi mostrado
+
+  // Controle de lembretes (Estado AGUARDANDO CONFIRMAÇÃO)
+  numeroExibicoesLembrete Int             @default(0)  // Quantas vezes lembrete foi exibido
+  ultimaExibicaoLembrete  DateTime?       // Última vez que lembrete foi mostrado
+
+  // Metadados
+  atualizadoEm          DateTime          @updatedAt
+
+  // Relações
+  historico             HistoricoLembrete[]
+
+  // Índices para performance
+  @@index([userId])
+  @@index([status])
+  @@index([proximoDisparo])
+  @@index([ativo])
+  @@map("lembretes")
+}
+
+// Model para rastrear todas as ações e mudanças de estado
+model HistoricoLembrete {
+  id              String   @id @default(cuid())
+
+  // Relacionamento
+  lembreteId      String
+  lembrete        Lembrete @relation(fields: [lembreteId], references: [id], onDelete: Cascade)
+
+  // Informações da ação
+  estadoAnterior  StatusLembrete?
+  estadoNovo      StatusLembrete
+  acao            String           // "criado", "disparado", "visto", "confirmado", "editado"
+  descricao       String?          @db.Text
+
+  // Timestamp
+  dataHora        DateTime         @default(now())
+
+  // Metadados
+  ipAddress       String?
+  userAgent       String?
+
+  @@index([lembreteId])
+  @@index([dataHora])
+  @@map("historico_lembretes")
 }
