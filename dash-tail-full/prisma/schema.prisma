@@ -1,0 +1,842 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  User              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  User         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model SystemLog {
+  id          String   @id
+  userId      String
+  createdAt   DateTime @default(now())
+  entityId    String?
+  entityType  String?
+  event       String?
+  description String?
+  ipAddress   String?
+  meta        String?
+  User        User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model SystemSetting {
+  id                             String   @id
+  name                           String   @default("My Company")
+  logo                           String?
+  active                         Boolean  @default(true)
+  address                        String?
+  websiteURL                     String?
+  supportEmail                   String?
+  supportPhone                   String?
+  language                       String   @default("en")
+  timezone                       String   @default("UTC")
+  currency                       String   @default("USD")
+  currencyFormat                 String   @default("$ {value}")
+  socialFacebook                 String?
+  socialTwitter                  String?
+  socialInstagram                String?
+  socialLinkedIn                 String?
+  socialPinterest                String?
+  socialYoutube                  String?
+  notifyStockEmail               Boolean  @default(true)
+  notifyStockWeb                 Boolean  @default(true)
+  notifyStockThreshold           Int      @default(10)
+  notifyStockRoleIds             String[]
+  notifyNewOrderEmail            Boolean  @default(true)
+  notifyNewOrderWeb              Boolean  @default(true)
+  notifyNewOrderRoleIds          String[]
+  notifyOrderStatusUpdateEmail   Boolean  @default(true)
+  notifyOrderStatusUpdateWeb     Boolean  @default(true)
+  notifyOrderStatusUpdateRoleIds String[]
+  notifyPaymentFailureEmail      Boolean  @default(true)
+  notifyPaymentFailureWeb        Boolean  @default(true)
+  notifyPaymentFailureRoleIds    String[]
+  notifySystemErrorFailureEmail  Boolean  @default(true)
+  notifySystemErrorWeb           Boolean  @default(true)
+  notifySystemErrorRoleIds       String[]
+}
+
+model User {
+  id              String      @id
+  email           String      @unique
+  password        String?
+  country         String?
+  timezone        String?
+  name            String?
+  roleId          String
+  status          UserStatus  @default(INACTIVE)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime
+  lastSignInAt    DateTime?
+  emailVerifiedAt DateTime?
+  isTrashed       Boolean     @default(false)
+  avatar          String?
+  invitedByUserId String?
+  isProtected     Boolean     @default(false)
+  Account         Account[]
+  Session         Session[]
+  SystemLog       SystemLog[]
+  UserRole        UserRole    @relation(fields: [roleId], references: [id])
+
+  @@index([invitedByUserId])
+  @@index([roleId])
+  @@index([status])
+}
+
+model UserPermission {
+  id                 String               @id
+  slug               String               @unique
+  name               String
+  description        String?
+  createdByUserId    String?
+  createdAt          DateTime             @default(now())
+  UserRolePermission UserRolePermission[]
+}
+
+model UserRole {
+  id                 String               @id
+  slug               String               @unique
+  name               String               @unique
+  description        String?
+  isTrashed          Boolean              @default(false)
+  createdByUserId    String?
+  createdAt          DateTime             @default(now())
+  isProtected        Boolean              @default(false)
+  isDefault          Boolean              @default(false)
+  User               User[]
+  UserRolePermission UserRolePermission[]
+}
+
+model UserRolePermission {
+  id             String         @id
+  roleId         String
+  permissionId   String
+  assignedAt     DateTime       @default(now())
+  UserPermission UserPermission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  UserRole       UserRole       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model condicoes_pagamento {
+  id                            Int                      @id(map: "pk_condicoes") @default(autoincrement())
+  fk_cliente                    Int?
+  fk_fabrica                    Int?
+  cond_100                      Int?                     @db.SmallInt
+  cond_2                        Int?                     @db.SmallInt
+  cond_3                        Int?                     @db.SmallInt
+  cond_4                        Int?                     @db.SmallInt
+  cond_5                        Int?                     @db.SmallInt
+  descontos_1                   Float?
+  descontos_2                   Float?
+  descontos_3                   Float?
+  descontos_4                   Float?
+  descontos_5                   Float?
+  observacao                    String?                  @db.VarChar(300)
+  codigo_cliente_fabrica        String?                  @db.VarChar(20)
+  fk_transportadora             Int?
+  desconto_ds                   String?                  @db.VarChar(12)
+  lista_preco_ds                String?                  @db.VarChar(12)
+  cond_1                        String?                  @db.VarChar(12)
+  codigo_transportadora_fabrica String?                  @db.VarChar(30)
+  cod_cond_pagamento            String?                  @db.VarChar(20)
+  tremonte_cliente              tremonte_cliente?        @relation(fields: [fk_cliente], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_condicoes_cliente")
+  tremonte_fabricante           tremonte_fabricante?     @relation(fields: [fk_fabrica], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_condicoes_fabricante")
+  tremonte_transportadora       tremonte_transportadora? @relation(fields: [fk_transportadora], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_condicoes_transportadora")
+}
+
+model estado {
+  id                                                        Int                       @id(map: "pk_estado") @default(autoincrement())
+  uf                                                        String?                   @db.VarChar(2)
+  descricao                                                 String?                   @db.VarChar(60)
+  tremonte_cliente_tremonte_cliente_cobranca_estadoToestado tremonte_cliente[]        @relation("tremonte_cliente_cobranca_estadoToestado")
+  tremonte_cliente_tremonte_cliente_entrega_estadoToestado  tremonte_cliente[]        @relation("tremonte_cliente_entrega_estadoToestado")
+  tremonte_cliente_tremonte_cliente_estadoToestado          tremonte_cliente[]        @relation("tremonte_cliente_estadoToestado")
+  tremonte_transportadora                                   tremonte_transportadora[]
+}
+
+model funcao {
+  id            Int            @id(map: "pk_funcao_menu") @default(autoincrement())
+  nome          String?        @db.VarChar(40)
+  codigo_funcao String?        @db.VarChar(20)
+  status        Boolean?       @default(true)
+  menu_funcao   menu_funcao[]
+  usuario_menu  usuario_menu[]
+}
+
+model menu {
+  id           Int            @id(map: "pk_item_menu") @default(autoincrement())
+  fk_origem    Int?
+  nome         String?        @db.VarChar(30)
+  url          String?        @db.VarChar(120)
+  nivel        Int?           @db.SmallInt
+  status       Boolean?       @default(true)
+  codigo       Int?
+  descricao    String?        @db.VarChar(60)
+  menu_funcao  menu_funcao[]
+  usuario_menu usuario_menu[]
+}
+
+model menu_funcao {
+  id        Int     @id(map: "menu_funcao_pk") @default(autoincrement())
+  fk_menu   Int?
+  fk_funcao Int?
+  funcao    funcao? @relation(fields: [fk_funcao], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "menu_funcao_fk_funcao")
+  menu      menu?   @relation(fields: [fk_menu], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "menu_funcao_fk_menu")
+}
+
+model planos {
+  id               Int      @id(map: "pk_plano") @default(autoincrement())
+  fk_cliente       Int?
+  cliente          Boolean? @default(false)
+  cliente_valor    Float?
+  fornecedor       Boolean? @default(false)
+  fornecedor_valor Float?
+  produto          Boolean? @default(false)
+  produto_valor    Float?
+}
+
+model topfox_utilizacao_material {
+  id   Int     @id(map: "pk_utilizacao_material") @default(autoincrement())
+  nome String? @db.VarChar(60)
+}
+
+model tremonte_cliente {
+  id                                              Int                          @id(map: "pk_cliente") @default(autoincrement())
+  razao_social                                    String?                      @db.VarChar(60)
+  fantasia                                        String?                      @db.VarChar(60)
+  cnpj                                            String?                      @db.VarChar(18)
+  grupo_clientes                                  Int?
+  endereco                                        String?                      @db.VarChar(60)
+  bairro                                          String?                      @db.VarChar(60)
+  cidade                                          String?                      @db.VarChar(30)
+  estado                                          Int?
+  cep                                             String?                      @db.VarChar(11)
+  inscricao_estadual                              String?                      @db.VarChar(18)
+  contato_email                                   String?                      @db.VarChar(120)
+  contato_nome                                    String?                      @db.VarChar(80)
+  contato_telefone                                String?                      @db.VarChar(16)
+  contato_telefone_ramal                          String?                      @db.VarChar(4)
+  contato_celular                                 String?                      @db.VarChar(16)
+  contato_radio                                   String?                      @db.VarChar(17)
+  contato_fax                                     String?                      @db.VarChar(16)
+  contato_regiao                                  Int?
+  fk_vendedor                                     Int?
+  entrega_endereco                                String?                      @db.VarChar(60)
+  entrega_bairro                                  String?                      @db.VarChar(60)
+  entrega_cidade                                  String?                      @db.VarChar(30)
+  entrega_estado                                  Int?
+  entrega_cep                                     String?                      @db.VarChar(10)
+  entrega_nfexml                                  String?                      @db.VarChar(100)
+  cobranca_endereco                               String?                      @db.VarChar(60)
+  cobranca_bairro                                 String?                      @db.VarChar(60)
+  cobranca_cidade                                 String?                      @db.VarChar(30)
+  cobranca_estado                                 Int?
+  cobranca_cep                                    String?                      @db.VarChar(10)
+  transportadora                                  Int?
+  situacao                                        Boolean?
+  situacao_desde                                  DateTime?                    @db.Date
+  situacao_ate                                    DateTime?                    @db.Date
+  receber_email_servico                           Boolean?
+  habilitado                                      Boolean?
+  criterio_pagamento                              Int?
+  motivo_bloqueio                                 Int?
+  status                                          Boolean?                     @default(true)
+  observacao                                      String?                      @db.VarChar(200)
+  condicoes_pagamento                             condicoes_pagamento[]
+  tremonte_criterio_pagamento                     tremonte_criterio_pagamento? @relation(fields: [criterio_pagamento], references: [id], onDelete: Restrict, map: "fk_cliente_criterio")
+  tremonte_grupo_clientes                         tremonte_grupo_clientes?     @relation(fields: [grupo_clientes], references: [id], onDelete: Restrict, map: "fk_cliente_grupo_cliente")
+  tremonte_motivo_bloqueio                        tremonte_motivo_bloqueio?    @relation(fields: [motivo_bloqueio], references: [id], onDelete: Restrict, map: "fk_cliente_motivo_bloqueio")
+  tremonte_regiao_zona                            tremonte_regiao_zona?        @relation(fields: [contato_regiao], references: [id], onDelete: Restrict, map: "fk_cliente_regiao")
+  tremonte_transportadora                         tremonte_transportadora?     @relation(fields: [transportadora], references: [id], onDelete: Restrict, map: "fk_cliente_transportadora")
+  tremonte_vendedor                               tremonte_vendedor?           @relation(fields: [fk_vendedor], references: [id], onDelete: Restrict, map: "fk_cliente_vendedor")
+  estado_tremonte_cliente_cobranca_estadoToestado estado?                      @relation("tremonte_cliente_cobranca_estadoToestado", fields: [cobranca_estado], references: [id], onDelete: Restrict, map: "fk_cobranca_estado")
+  estado_tremonte_cliente_entrega_estadoToestado  estado?                      @relation("tremonte_cliente_entrega_estadoToestado", fields: [entrega_estado], references: [id], onDelete: Restrict, map: "fk_entrega_estado")
+  estado_tremonte_cliente_estadoToestado          estado?                      @relation("tremonte_cliente_estadoToestado", fields: [estado], references: [id], onDelete: Restrict, map: "fk_estado_estado")
+  tremonte_pedido                                 tremonte_pedido[]
+}
+
+model tremonte_criterio_pagamento {
+  id                  Int                   @id(map: "pk_criterio") @default(autoincrement())
+  criterio            String?               @db.VarChar(20)
+  descricao           String?               @db.VarChar(60)
+  tremonte_cliente    tremonte_cliente[]
+  tremonte_fabricante tremonte_fabricante[]
+}
+
+model tremonte_fabricante {
+  id                                Int                                 @id(map: "pk_tremonte_fabricante") @default(autoincrement())
+  razao_social                      String?                             @db.VarChar(80)
+  fantasia                          String?                             @db.VarChar(60)
+  endereco                          String?                             @db.VarChar(60)
+  bairro                            String?                             @db.VarChar(60)
+  cidade                            String?                             @db.VarChar(30)
+  estado                            Int?
+  cep                               String?                             @db.VarChar(10)
+  cnpj                              String?                             @db.VarChar(18)
+  inscricao                         String?                             @db.VarChar(16)
+  contato_email_pedidos             String?                             @db.VarChar(60)
+  contato_email_contato             String?                             @db.VarChar(200)
+  contato_nfe_xml                   String?                             @db.VarChar(100)
+  contato_nome_contato              String?                             @db.VarChar(30)
+  contato_telefone1                 String?                             @db.VarChar(16)
+  contato_telefone1_ramal           String?                             @db.VarChar(4)
+  contato_telefone2                 String?                             @db.VarChar(16)
+  contato_telefone2_ramal           String?                             @db.VarChar(4)
+  contato_fax                       String?                             @db.VarChar(20)
+  codigo_representada               String?                             @db.VarChar(6)
+  inicio_representada               DateTime?                           @db.Date
+  criterio_pagamento                Int?
+  base_do_dia                       String?                             @db.VarChar(2)
+  base_ate                          String?                             @db.VarChar(2)
+  anexo_txt                         Boolean?
+  anexo_xls                         Boolean?
+  dia_vencimento                    String?                             @db.VarChar(2)
+  porcent_comissao                  Float?
+  fechamento_periodo                String?                             @db.VarChar(2)
+  emite_nota                        Boolean?
+  habilitado                        Boolean?                            @default(true)
+  status                            Boolean?                            @default(true)
+  anexo_xml                         Boolean?                            @default(false)
+  ident_usuario                     String?                             @db.VarChar(20)
+  ident_empresa                     String?                             @db.VarChar(20)
+  anexo_json                        Boolean?
+  num_ped_cli                       Boolean?                            @default(true)
+  condicoes_pagamento               condicoes_pagamento[]
+  tremonte_criterio_pagamento       tremonte_criterio_pagamento?        @relation(fields: [criterio_pagamento], references: [id], onDelete: Restrict, map: "fk_fabricante_criterio_pagamento")
+  tremonte_grupo_produto_fabricante tremonte_grupo_produto_fabricante[]
+  tremonte_lista_preco              tremonte_lista_preco[]
+  tremonte_pedido                   tremonte_pedido[]
+  tremonte_produto                  tremonte_produto[]
+}
+
+model tremonte_fat {
+  id            Int       @id @default(autoincrement())
+  dtemissao     String?   @db.VarChar(10)
+  nfiscal       String?   @db.VarChar(30)
+  serie         String?   @db.VarChar(3)
+  destinatario  String?   @db.VarChar(18)
+  emitente      String?   @db.VarChar(18)
+  codigo        String?   @db.VarChar(20)
+  quantidade    Float?
+  original      String?   @db.VarChar(30)
+  tremonte      String?   @db.VarChar(30)
+  data_cadastro DateTime? @default(now()) @db.Timestamptz(6)
+  arquivo       String?   @db.VarChar(60)
+  fkfabrica     Int?      @default(0)
+  fkcliente     Int?      @default(0)
+  fkcodigo      Int?      @default(0)
+  fktremonte    Int?      @default(0)
+  fkoriginal    Int?      @default(0)
+  fkrefpeditem  Int?      @default(0)
+  fknota        Int?      @default(0)
+}
+
+model tremonte_fat_arq {
+  id            Int       @id
+  dtemissao     String?   @db.VarChar(10)
+  nfiscal       String?   @db.VarChar(30)
+  serie         String?   @db.VarChar(3)
+  destinatario  String?   @db.VarChar(18)
+  emitente      String?   @db.VarChar(18)
+  codigo        String?   @db.VarChar(20)
+  quantidade    Float?
+  original      String?   @db.VarChar(30)
+  tremonte      String?   @db.VarChar(30)
+  data_cadastro DateTime? @db.Timestamp(6)
+  arquivo       String?   @db.VarChar(60)
+  fkcodigo      Int?      @default(0)
+  fkrefpeditem  Int?      @default(0)
+  processamento DateTime? @default(now()) @db.Timestamptz(6)
+}
+
+model tremonte_faturamento {
+  id                Int       @id @default(autoincrement())
+  cnpj_destinatario String?   @db.VarChar(20)
+  cnpj_emitente     String?   @db.VarChar(20)
+  fk_erro           Int?
+  status            Int?      @default(0)
+  data_cadastro     DateTime? @default(now()) @db.Timestamptz(6)
+  nota_fiscal       String?   @db.VarChar(60)
+  protocolo         String?   @db.VarChar(60)
+  vincular          Int?
+  total             Float?
+  pedido            String?   @db.VarChar(60)
+  data_emissao      String?   @db.VarChar(30)
+}
+
+model tremonte_faturamento_config {
+  pop3         String?  @db.VarChar(80)
+  email        String?  @db.VarChar(80)
+  senha        String?  @db.VarChar(20)
+  porta        String?  @db.VarChar(8)
+  frequencia   Int?
+  logs         Boolean?
+  status       Boolean?
+  diretorio    String?  @db.VarChar(200)
+  servico      Int?
+  ultimo_id    String?  @db.VarChar(100)
+  fatt_conf_id Int      @id @default(autoincrement())
+}
+
+model tremonte_faturamento_detalhamento {
+  id                      Int       @id @default(autoincrement())
+  fk_tremonte_faturamento Int?
+  status                  Int?
+  valor_total             Float?
+  vincular                Int?
+  data_cadastro           DateTime? @db.Timestamptz(6)
+  quant                   Int?
+  valor_unitario          Float?
+  icms                    Float?
+  pis                     Float?
+  cofins                  Float?
+  ipi                     Float?
+  xped                    String?   @db.VarChar(80)
+  produto                 String?   @db.VarChar(80)
+  saldo                   Int?
+  fk_erro                 Int?
+  processado              Int?      @default(0)
+}
+
+model tremonte_faturamento_log {
+  id                                Int                                 @id(map: "pk_faturamento_log") @default(autoincrement())
+  status                            Int?
+  data                              DateTime?                           @default(now()) @db.Timestamp(6)
+  descricao                         String?                             @db.VarChar(300)
+  tremonte_faturamento_log_detalhes tremonte_faturamento_log_detalhes[]
+}
+
+model tremonte_faturamento_log_detalhes {
+  id                       Int                       @id(map: "pk_faturamento_log_details") @default(autoincrement())
+  log                      Int?
+  status                   Int?
+  descricao                String?                   @db.VarChar(120)
+  tremonte_faturamento_log tremonte_faturamento_log? @relation(fields: [log], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_log_detail")
+}
+
+model tremonte_fatvinculo_pedido {
+  id                     Int    @id(map: "pk_vinc") @default(autoincrement())
+  fk_faturamento_detalhe Int?
+  fk_pedido_detalhe      Int?
+  fk_produto             Int?
+  quantidade             Float  @default(0)
+  valor                  Float? @default(0)
+}
+
+model tremonte_grupo_clientes {
+  id               Int                @id(map: "pk_grupo_cliente") @default(autoincrement())
+  codigo_grupo     String?            @db.VarChar(6)
+  descricao        String?            @db.VarChar(60)
+  status           Boolean?           @default(true)
+  tremonte_cliente tremonte_cliente[]
+}
+
+model tremonte_grupo_produto {
+  id                                Int                                 @id(map: "pk_grupo_produto") @default(autoincrement())
+  codigo                            String?                             @db.VarChar(6)
+  descricao                         String?                             @db.VarChar(60)
+  status                            Boolean?                            @default(true)
+  tremonte_grupo_produto_fabricante tremonte_grupo_produto_fabricante[]
+  tremonte_produto                  tremonte_produto[]
+}
+
+model tremonte_grupo_produto_fabricante {
+  id                     Int                     @id(map: "pk_grupo_produto_fabricante") @default(autoincrement())
+  fk_grupo_produto       Int?
+  fk_fabricante          Int?
+  tremonte_fabricante    tremonte_fabricante?    @relation(fields: [fk_fabricante], references: [id], onDelete: Restrict, map: "fk_grupo_fabricante")
+  tremonte_grupo_produto tremonte_grupo_produto? @relation(fields: [fk_grupo_produto], references: [id], onDelete: Restrict, map: "fk_grupo_fabricante_grupo")
+}
+
+model tremonte_linha_produto {
+  id               Int                @id(map: "pk_linha_produto") @default(autoincrement())
+  codigo           String?            @db.VarChar(6)
+  descricao        String?            @db.VarChar(60)
+  tremonte_produto tremonte_produto[]
+}
+
+model tremonte_lista_preco {
+  id                        Int                         @id(map: "pk_lista") @default(autoincrement())
+  fk_fabricante             Int?
+  nome_lista                String?                     @db.VarChar(25)
+  atual                     Boolean?
+  tremonte_fabricante       tremonte_fabricante?        @relation(fields: [fk_fabricante], references: [id], onDelete: Restrict, map: "fk_lista_fabricante")
+  tremonte_lista_preco_item tremonte_lista_preco_item[]
+}
+
+model tremonte_lista_preco_item {
+  id                   Int                   @id(map: "pk_lista_item") @default(autoincrement())
+  fk_lista_preco       Int?
+  fk_produto           Int?
+  preco                Float?
+  master               Int?                  @db.SmallInt
+  tremonte_lista_preco tremonte_lista_preco? @relation(fields: [fk_lista_preco], references: [id], onDelete: Restrict, map: "fk_lista_item")
+  tremonte_produto     tremonte_produto?     @relation(fields: [fk_produto], references: [id], onDelete: Restrict, map: "fk_lista_item_produto")
+}
+
+model tremonte_logs {
+  id               Int               @id(map: "pk_logs") @default(autoincrement())
+  fk_usuario       Int?
+  acao             String?           @db.VarChar(200)
+  data             DateTime?         @default(now()) @db.Timestamp(6)
+  codigo_tela      Int?
+  tremonte_usuario tremonte_usuario? @relation(fields: [fk_usuario], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_logs_usuario")
+}
+
+model tremonte_marca_produto {
+  id               Int                @id(map: "pk_marca_produto") @default(autoincrement())
+  codigo           String?            @db.VarChar(6)
+  descricao        String?            @db.VarChar(60)
+  tremonte_produto tremonte_produto[]
+}
+
+model tremonte_menu {
+  id           Int     @id(map: "pk_menu") @default(autoincrement())
+  menu         Int?
+  nome         String? @db.VarChar(20)
+  id_interface Int?
+}
+
+model tremonte_menu_item {
+  id           Int     @id(map: "pk_menu_item") @default(autoincrement())
+  origem       Int?
+  nome         String? @db.VarChar(20)
+  id_interface Int?
+}
+
+model tremonte_menu_sub_item {
+  id     Int     @id(map: "pk_sub_item") @default(autoincrement())
+  origem Int?
+  menu   Int?
+  nome   String? @db.VarChar(20)
+}
+
+model tremonte_motivo_bloqueio {
+  id               Int                @id(map: "pk_cmotivo_bloqueio") @default(autoincrement())
+  motivo           String?            @db.VarChar(20)
+  descricao        String?            @db.VarChar(60)
+  bloq             Boolean?           @default(false)
+  tremonte_cliente tremonte_cliente[]
+}
+
+model tremonte_motivo_bloqueio_fabricante {
+  id        Int     @id(map: "pk_motivo_bloqueio_fabricante") @default(autoincrement())
+  motivo    String? @db.VarChar(20)
+  descricao String? @db.VarChar(60)
+}
+
+model tremonte_motivo_bloqueio_produto {
+  id               Int                @id(map: "pk_motivo_bloqueio_produto") @default(autoincrement())
+  motivo           String?            @db.VarChar(20)
+  descricao        String?            @db.VarChar(60)
+  bloq             Boolean?           @default(false)
+  tremonte_produto tremonte_produto[]
+}
+
+model tremonte_motivo_bloqueio_vendedor {
+  id        Int     @id(map: "pk_motivo_bloqueio_vendedor") @default(autoincrement())
+  motivo    String? @db.VarChar(20)
+  descricao String? @db.VarChar(60)
+}
+
+model tremonte_ped_acao {
+  id         Int       @id @default(autoincrement())
+  criacao    DateTime? @default(now()) @db.Timestamptz(6)
+  fabricante Int?      @default(0)
+  cliente    Int?      @default(0)
+  pedido     Int?      @default(0)
+  tipoacao   Int?      @default(0)
+  status     Boolean?  @default(true)
+  usuario    Int?      @default(0)
+  realizado  DateTime? @db.Timestamptz(6)
+}
+
+model tremonte_pedido {
+  id                      Int                       @id(map: "pk_tremonte_pedido") @default(autoincrement())
+  status                  Int?                      @db.SmallInt
+  fabricante              Int?
+  cliente                 Int?
+  transportadora          Int?
+  data_pedido             DateTime?                 @default(now()) @db.Date
+  pedido_original         String?                   @db.VarChar(20)
+  lista_preco             Int?
+  data_faturamento        DateTime?                 @db.Date
+  cond_2                  Int?                      @db.SmallInt
+  cond_3                  Int?                      @db.SmallInt
+  cond_4                  Int?                      @db.SmallInt
+  cond_5                  Int?                      @db.SmallInt
+  descontos_1             Float?
+  descontos_2             Float?
+  descontos_3             Float?
+  descontos_4             Float?
+  descontos_5             Float?
+  promocional             Boolean?
+  exportacao              Boolean?
+  observacao              String?                   @db.VarChar(400)
+  motivo_bloqueio         String?                   @db.VarChar(400)
+  download_xml            Boolean?                  @default(false)
+  status_envio_pedido     Int?                      @default(1)
+  orcamento               Boolean?                  @default(false)
+  criterio_pagamento      Int?                      @default(0)
+  cond_1                  String?                   @db.VarChar(10)
+  motivo_erro             String?                   @db.VarChar(200)
+  data_chegada            DateTime?                 @db.Timestamptz(6)
+  data_envio              DateTime?                 @db.Timestamptz(6)
+  email                   Boolean?                  @default(false)
+  tremonte_cliente        tremonte_cliente?         @relation(fields: [cliente], references: [id], onDelete: Restrict, map: "fk_ped_cliente")
+  tremonte_fabricante     tremonte_fabricante?      @relation(fields: [fabricante], references: [id], onDelete: Restrict, map: "fk_ped_fabricante")
+  tremonte_pedido_itens   tremonte_pedido_itens[]
+  tremonte_pedido_servico tremonte_pedido_servico[]
+}
+
+model tremonte_pedido_email {
+  id           Int       @id @default(autoincrement())
+  pedido       Int?
+  data         DateTime? @default(now()) @db.Timestamptz(6)
+  destinatario String?   @db.VarChar(200)
+  tipo         String?   @db.VarChar(150)
+  log          String?   @db.VarChar(500)
+}
+
+model tremonte_pedido_itens {
+  id               Int               @id(map: "pk_pedido_item") @default(autoincrement())
+  pedido           Int?
+  produto          Int?
+  quantidade       Int?
+  valor            Float?
+  valor_descontado Float?
+  promocional      Boolean?
+  saldo            Int?              @default(0)
+  total_fat        Float?            @default(0)
+  tremonte_pedido  tremonte_pedido?  @relation(fields: [pedido], references: [id], onDelete: Restrict, map: "fk_pedido")
+  tremonte_produto tremonte_produto? @relation(fields: [produto], references: [id], onDelete: Restrict, map: "fk_pedido_itens_produtos")
+}
+
+model tremonte_pedido_log {
+  id_pedido  Int?
+  data_saida DateTime? @default(now()) @db.Timestamptz(6)
+  ped_log    Int       @id @default(autoincrement())
+}
+
+model tremonte_pedido_servico {
+  id              Int              @id(map: "pk_tremonte_pedido_servico") @default(autoincrement())
+  pedido          Int?
+  processar       Boolean?
+  conteudo        Bytes?
+  tremonte_pedido tremonte_pedido? @relation(fields: [pedido], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_tremonte_pedido_servico")
+}
+
+model tremonte_produto {
+  id                               Int                               @id(map: "pk_produto") @default(autoincrement())
+  fk_fabricante                    Int?
+  codigo                           String?                           @db.VarChar(20)
+  descricao                        String?                           @db.VarChar(100)
+  desc_reduzida                    String?                           @db.VarChar(25)
+  grupo_produto                    Int?
+  linha_produto                    Int?
+  marca_produto                    Int?
+  codigo_original                  String?                           @db.VarChar(20)
+  unidade_medida                   Int?
+  produto_substituido              String?                           @db.VarChar(20)
+  validade                         DateTime?                         @db.Date
+  motivo_bloqueio                  Int?
+  inicio_bloq                      DateTime?                         @db.Date
+  termino_bloq                     DateTime?                         @db.Date
+  grupo_2                          String?                           @default(dbgenerated("10")) @db.VarChar
+  tremonte_lista_preco_item        tremonte_lista_preco_item[]
+  tremonte_pedido_itens            tremonte_pedido_itens[]
+  tremonte_marca_produto           tremonte_marca_produto?           @relation(fields: [marca_produto], references: [id], onDelete: Restrict, map: "fk_marca_produto")
+  tremonte_fabricante              tremonte_fabricante?              @relation(fields: [fk_fabricante], references: [id], onDelete: Restrict, map: "fk_produto_fabricante")
+  tremonte_grupo_produto           tremonte_grupo_produto?           @relation(fields: [grupo_produto], references: [id], onDelete: Restrict, map: "fk_produto_grupo_produto")
+  tremonte_linha_produto           tremonte_linha_produto?           @relation(fields: [linha_produto], references: [id], onDelete: Restrict, map: "fk_produto_linha_produto")
+  tremonte_motivo_bloqueio_produto tremonte_motivo_bloqueio_produto? @relation(fields: [motivo_bloqueio], references: [id], onDelete: Restrict, map: "fk_produto_motivo_bloqueio")
+  tremonte_unidade_medida          tremonte_unidade_medida?          @relation(fields: [unidade_medida], references: [id], onDelete: Restrict, map: "fk_produto_unidade")
+}
+
+model tremonte_regiao_zona {
+  id                       Int                        @id(map: "pk_regiao_zona") @default(autoincrement())
+  codigo_regiao            String?                    @db.VarChar(20)
+  codigo_zona              String?                    @db.VarChar(20)
+  descricao_regiao         String?                    @db.VarChar(80)
+  descricao_zona_estatica  String?                    @db.VarChar(80)
+  descricao_reduzida       String?                    @db.VarChar(50)
+  tremonte_cliente         tremonte_cliente[]
+  tremonte_vendedor_regiao tremonte_vendedor_regiao[]
+}
+
+model tremonte_transportadora {
+  id                  Int                   @id(map: "pk_transportadoras") @default(autoincrement())
+  razao               String?               @db.VarChar(80)
+  fantasia            String?               @db.VarChar(60)
+  cnpj                String?               @db.VarChar(18)
+  endereco            String?               @db.VarChar(60)
+  bairro              String?               @db.VarChar(60)
+  cep                 String?               @db.VarChar(40)
+  cidade              String?               @db.VarChar(40)
+  uf                  Int?
+  fone                String?               @db.VarChar(16)
+  fax                 String?               @db.VarChar(16)
+  email               String?               @db.VarChar(60)
+  contato             String?               @db.VarChar(40)
+  contato2            String?               @db.VarChar(20)
+  codigo_servico      String?               @db.VarChar(30)
+  condicoes_pagamento condicoes_pagamento[]
+  tremonte_cliente    tremonte_cliente[]
+  estado              estado?               @relation(fields: [uf], references: [id], onDelete: Restrict, map: "fk_transportadora_uf")
+}
+
+model tremonte_unidade_medida {
+  id               Int                @id(map: "pk_unidade_medida") @default(autoincrement())
+  unidade          String?            @db.VarChar(2)
+  descricao        String?            @db.VarChar(60)
+  tremonte_produto tremonte_produto[]
+}
+
+model tremonte_usuario {
+  id                      Int                       @id(map: "pk_tremonte_usuario") @default(autoincrement())
+  grupo                   Int?
+  status                  Boolean?                  @default(true)
+  nome                    String?                   @db.VarChar(60)
+  usuario                 String?                   @db.VarChar(30)
+  senha                   String?                   @db.VarChar(32)
+  email                   String?                   @db.VarChar(80)
+  adm                     Boolean?                  @default(false)
+  troca_senha             Boolean?                  @default(true)
+  modelo                  Boolean?                  @default(false)
+  config_usuario          Int?                      @default(0)
+  vendedor                Boolean?                  @default(false)
+  tremonte_logs           tremonte_logs[]
+  tremonte_usuario_modelo tremonte_usuario_modelo[]
+  usuario_menu            usuario_menu[]
+  usuario_vendedor        usuario_vendedor[]
+}
+
+model tremonte_usuario_acesso {
+  id        Int  @id(map: "pk_usuario_acesso") @default(autoincrement())
+  usuario   Int?
+  item_menu Int? @db.SmallInt
+}
+
+model tremonte_usuario_grupo {
+  id   Int     @id(map: "pk_usuario_grupo") @default(autoincrement())
+  nome String? @db.VarChar(20)
+}
+
+model tremonte_usuario_grupo_acesso {
+  id        Int  @id(map: "pk_acesso_grupo") @default(autoincrement())
+  fk_grupo  Int?
+  item_menu Int? @db.SmallInt
+}
+
+model tremonte_usuario_modelo {
+  id                  Int               @id(map: "pk_tremonte_usuario_modelo") @default(autoincrement())
+  fk_tremonte_usuario Int?
+  descricao           String?           @db.VarChar(120)
+  alias               String?           @db.VarChar(60)
+  tremonte_usuario    tremonte_usuario? @relation(fields: [fk_tremonte_usuario], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "tremonte_usuario_modelo_fk_tremonte_usuario")
+}
+
+model tremonte_vendedor {
+  id                       Int                        @id(map: "pk_tremonte_vendedor") @default(autoincrement())
+  apelido                  String?                    @db.VarChar(20)
+  nome                     String?                    @db.VarChar(60)
+  endereco                 String?                    @db.VarChar(60)
+  cep                      String?                    @db.VarChar(10)
+  bairro                   String?                    @db.VarChar(60)
+  cidade                   String?                    @db.VarChar(20)
+  uf                       Int?
+  celular                  String?                    @db.VarChar(16)
+  telefone                 String?                    @db.VarChar(16)
+  ramal                    String?                    @db.VarChar(4)
+  comissao                 Float?
+  email                    String?                    @db.VarChar(120)
+  rg                       String?                    @db.VarChar(12)
+  cpf                      String?                    @db.VarChar(18)
+  imagem                   String?                    @db.VarChar(60)
+  status                   Boolean?                   @default(true)
+  tremonte_cliente         tremonte_cliente[]
+  tremonte_vendedor_banco  tremonte_vendedor_banco[]
+  tremonte_vendedor_regiao tremonte_vendedor_regiao[]
+  usuario_vendedor         usuario_vendedor[]
+}
+
+model tremonte_vendedor_banco {
+  id                Int                @id(map: "pk_vendedor_banco") @default(autoincrement())
+  fk_vendedor       Int?
+  banco             String?            @db.VarChar(30)
+  agencia           String?            @db.VarChar(7)
+  conta             String?            @db.VarChar(10)
+  tipo              Int?               @db.SmallInt
+  preferencial      Boolean?
+  tremonte_vendedor tremonte_vendedor? @relation(fields: [fk_vendedor], references: [id], onDelete: Restrict, map: "fk_vendedor_banco")
+}
+
+model tremonte_vendedor_regiao {
+  id                   Int                   @id(map: "pk_vendedor_regiao") @default(autoincrement())
+  fk_vendedor          Int?
+  regiao               Int?
+  tremonte_regiao_zona tremonte_regiao_zona? @relation(fields: [regiao], references: [id], onDelete: Restrict, map: "fk_vendedor_regiao")
+  tremonte_vendedor    tremonte_vendedor?    @relation(fields: [fk_vendedor], references: [id], onDelete: Restrict, map: "fk_vendedor_zona")
+}
+
+model usuario_menu {
+  id               Int               @id(map: "pk_usuario_menu") @default(autoincrement())
+  fk_usuario       Int?
+  fk_menu          Int?
+  fk_func          Int?
+  tremonte_usuario tremonte_usuario? @relation(fields: [fk_usuario], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "tremonte_usuario_fk_menu")
+  funcao           funcao?           @relation(fields: [fk_func], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "usuario_menu_fk_funcao")
+  menu             menu?             @relation(fields: [fk_menu], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "usuario_menu_fk_menu")
+}
+
+model usuario_vendedor {
+  id                Int                @id(map: "pk_usuario_vendedor") @default(autoincrement())
+  fk_usuario        Int?
+  fk_vendedor       Int?
+  tremonte_usuario  tremonte_usuario?  @relation(fields: [fk_usuario], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_usuario_vendedor_usuario")
+  tremonte_vendedor tremonte_vendedor? @relation(fields: [fk_vendedor], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_usuario_vendedor_vendedor")
+}
+
+enum UserStatus {
+  INACTIVE
+  ACTIVE
+  BLOCKED
+}
