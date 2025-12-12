@@ -13,6 +13,8 @@ import MobileSidebar from "@/components/partials/sidebar/mobile-sidebar";
 import HeaderSearch from "@/components/header-search";
 import { useMounted } from "@/hooks/use-mounted";
 import LayoutLoader from "@/components/layout-loader";
+import NotificationPanel from "@/components/lembretes/notification-panel";
+
 const DashBoardLayoutProvider = ({ children, trans }: { children: React.ReactNode, trans: any }) => {
   const { collapsed, sidebarType, setCollapsed, subMenu } = useSidebar();
   const [open, setOpen] = React.useState(false);
@@ -191,6 +193,7 @@ const LayoutWrapper = ({ children, isMobile, setOpen, open, location, trans }: {
 
       <MobileSidebar trans={trans} className="left-[300px]" />
       <HeaderSearch open={open} setOpen={setOpen} />
+      <NotificationPanel />
     </>
   );
 };
